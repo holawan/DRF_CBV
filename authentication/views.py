@@ -14,12 +14,13 @@ from django.contrib.auth import authenticate
 #또한 이를 python 객체를 json으로 변환하여유저에게 제공한다.  
 
 
+#토큰으로 인증된 유저 정보 가져오기 
 class AuthUserAPIView(GenericAPIView) :
     
     permission_classes=(permissions.IsAuthenticated,)
-    
     def get(self,request) :
-        
+        # print(request.user)
+
         user = request.user
         serializers=RegisterSerializer(user)
         
@@ -27,7 +28,7 @@ class AuthUserAPIView(GenericAPIView) :
          
 
 class RegisterAPIView(GenericAPIView) :
-    
+    authentication_classes=[]
     
     serializer_class=RegisterSerializer 
     
@@ -42,7 +43,7 @@ class RegisterAPIView(GenericAPIView) :
     
     
 class LoginAPIView(GenericAPIView) :
-    
+    authentication_classes=[]
     serializer_class = LoginSerializer
     def post(self,request) :
         email = request.data.get('email',None)
