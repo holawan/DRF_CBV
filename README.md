@@ -361,6 +361,14 @@ todos\views.py                 1      1     0%
 
 - Django의 많은 기능을 상속할 수 있기 때문
 
+### GenericAPIView
+
+- DRF에서는 GenericAPIView에 CreateModelMixin,ListModelMixin 등 다양한 클래스를 결합해 APIView를 구현한다.
+- GenericAPIView는 CRUD에서 공통적으로 사용되는 다양한 속성을 제공하고, Mixin은 CRUD에서 특정 기능을 수행하는 메소드를 제공한다.
+- DRF에서는 GenericAPIView와 Mixin으로 대부분 API View를 구성하지만, 상황과 모델, 요청에 따라 메소드를 Override 해서 커스텀을 진행한다. 
+
+### Register
+
 ```python
 class RegisterAPIView(GenericAPIView) :
     
@@ -377,7 +385,9 @@ class RegisterAPIView(GenericAPIView) :
         return response.Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
 ```
 
-
+- serializer_class 
+    - 요청을 받은 값에 대해 직렬화를 진행하며, 유효성 평가를 할 수 있는 클래스를 지정한다.
+    - serializer는 보통 개발자의 의도에 따라 Model에 맞추어 등록하고, 요청을 받을 Model을 대상으로 직렬화 class를 만든다. 
 
 ### Serializer
 
@@ -409,8 +419,21 @@ class RegisterSerializer(serializers.ModelSerializer) :
 #### Views.py
 
 ```python
-class LoginAPIView(GenericAPIView) :
+
+#토큰으로 인증된 유저 정보 가져오기 
+class AuthUserAPIView(GenericAPIView) :
     
+    permission_classes=(permissions.IsAuthenticated,)
+    def get(self,request) :
+        # print(request.user)
+
+        user = request.user
+        serializers=RegisterSerializer(user)
+        
+        return response.Response({'user':serializers.data})
+    
+class LoginAPIView(GenericAPIView) :
+    authentication_classes=[]
     serializer_class = LoginSerializer
     def post(self,request) :
         email = request.data.get('email',None)
@@ -424,9 +447,9 @@ class LoginAPIView(GenericAPIView) :
             
             return response.Response(serializer.data,status=status.HTTP_200_OK)
         return response.Response({'message':"Invaild credentials,try again"},status=status.HTTP_401_UNAUTHORIZED)
-        
-        
 ```
+
+
 
 ### JWT
 
@@ -491,3 +514,148 @@ class JWTAuthentications(BaseAuthentication) :
 
 
 
+## List/Create API View
+
+- APIView를 상속받아 간단히, 게시글을 작성하고 조회할 수 있다.
+
+### Model
+
+```python
+class Todo(TrackingModel) :
+    
+    title = models.CharField(max_length=255)
+    desc = models.TextField()
+    is_complete = models.BooleanField(default=False)
+    owner = models.ForeignKey(to=User,on_delete=models.CASCADE)
+    
+    def __str__(self) :
+        return self.title
+```
+
+- is_complete는 Todo를 만들 때 기본적으로 False로 설정해, Todo를 생성 시 기본적으로 끝나지 않은 상태로 등록한다.
+- Todo의 주인은 Todo를 생성한 User를 참조해서 등록한다. 
+
+### Serializer
+
+```python
+class TodoSerializer(ModelSerializer) :
+    
+    class Meta:
+        model=Todo
+        
+        fields = ('title','desc','is_complete',)
+```
+
+- is_complete 는 default 값이 있기 때문에, title과 desc를 입력받게 하고, 직렬화 필드를 거치면, 해당 3가지 필드를 serializer에 담아서 응답을 보낸다. 
+
+### Create
+
+```python
+class CreateTodoAPIView(CreateAPIView) :
+    
+    serializer_class =TodoSerializer
+    permission_classes=(IsAuthenticated,)
+    
+    def perform_create(self, serializer):
+        return serializer.save(owner=self.request.user)
+```
+
+- CreateAPIView는 mixins.CreateModelMixin과 GenericAPIView를 상속받는다.
+
+```python
+# CreateAPIView
+class CreateAPIView(mixins.CreateModelMixin,
+                    GenericAPIView):
+    """
+    Concrete view for creating a model instance.
+    """
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+    
+#mixins.CreateModelMixin
+class CreateModelMixin:
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    def get_success_headers(self, data):
+        try:
+            return {'Location': str(data[api_settings.URL_FIELD_NAME])}
+        except (TypeError, KeyError):
+            return {}
+```
+
+- 데이터가 POST 요청으로 들어오면, serializer 필드에 요청된 데이터를 넣고, 모델에 새로운 Instance를 추가한다. 
+- post 요청을 받으면, 넘어온 데이터로 create를 진행한다.
+- create는 CreateModelMixin class에서 상속받는데, serializer_classs에서 선언한 직렬화기로, 직렬화를 진행한다.
+- 유효성 검사를 끝내면 perform_create 함수에 직렬화가 끝낸 정보를 넣어주는데, 이를 custom 하여, 요청한 user를 owner로 선언해준다. 
+
+### List
+
+```python
+class TodoListAPIView(ListAPIView) :
+    
+    serializer_class = TodoSerializer
+    permission_classes=(IsAuthenticated,)
+    
+    
+    queryset=Todo.objects.all()
+    
+    
+    def get_queryset(self):
+        return Todo.objects.filter(owner=self.request.user)
+```
+
+- List API View는 get 요청에 대해 queryset 형태로 데이터를 리턴하는 클래스이다.
+
+- 해당 클래스에는 필수적으로 queryset을 정의해야 하며, 이를 정의하면 다른 override 없이 queryset을 리턴한다.
+
+    - ```python
+        class TodoListAPIView(ListAPIView) :
+         
+            serializer_class = TodoSerializer
+            queryset=Todo.objects.all()
+        ```
+
+- 하지만 queryset에 대해서 custom하여 request에 담긴 data를 가지고 오고 싶은 경우 get_queryset 함수를 재정의 하여 해결할 수 있다.
+
+    - ```python
+        class TodoListAPIView(ListAPIView) :
+            
+            serializer_class = TodoSerializer
+            def get_queryset(self):
+                return Todo.objects.filter(owner=self.request.user)
+        ```
+
+- 해당 TodoListAPIView의 경우 get_queryset을 재정의 했기 때문에, queryset을 요청하지 않아도 되며, queryset 요청에 대해 요청한 유저가 작성한 유저인 경우에만 불러온다. 
+
+- 일반적으로 queryset을 사용하여 보다 깔끔히 표시하지만, **request에서 data를 가져와야 할 경우에는 필수적으로 get_queryset을 사용**해야한다.
+
+#### Stackoverflow 참고 글 
+
+https://stackoverflow.com/questions/19707237/use-get-queryset-method-or-set-queryset-variable
+
+- `queryset`서버를 시작할 때 쿼리 세트가 한 번만 생성되며, 반면 `get_queryset`에 모든 요청에 대해 메서드가 호출된다.
+
+    - 유용한 또 다른 예 `get_queryset`는 콜러블을 기반으로 필터링하려는 경우입니다. 예를 들어 오늘의 투표를 반환합니다.
+
+        ```python
+        class IndexView(generic.ListView):
+            def get_queryset(self):
+                """Returns Polls that were created today"""
+                return Poll.active.filter(pub_date=date.today())
+        ```
+
+        queryset를 설정하여 동일한 작업을 시도 하면 뷰가 로드될 때 `queryset`의 `date.today()`가 한 번만 호출되고 잠시 후 뷰가 잘못된 결과를 표시합니다.
+
+        ```haskell
+        class IndexView(generic.ListView):
+            # don't do this!
+            queryset = Poll.active.filter(pub_date=date.today())
+        ```

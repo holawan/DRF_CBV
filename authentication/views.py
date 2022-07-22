@@ -19,8 +19,6 @@ class AuthUserAPIView(GenericAPIView) :
     
     permission_classes=(permissions.IsAuthenticated,)
     def get(self,request) :
-        # print(request.user)
-
         user = request.user
         serializers=RegisterSerializer(user)
         
@@ -45,6 +43,7 @@ class RegisterAPIView(GenericAPIView) :
 class LoginAPIView(GenericAPIView) :
     authentication_classes=[]
     serializer_class = LoginSerializer
+    
     def post(self,request) :
         email = request.data.get('email',None)
         password = request.data.get('password',None)
