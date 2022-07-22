@@ -61,11 +61,11 @@
 
 ## Create a Tracking Model
 
-- Django는 모델을 생성할 때마다 약간의 지식이 필요하다
+- Django는 모델을 생성할 때마다 유사한 필드를 적용해야할 때가 있다.
 
-- 장고 모델의 객체가 생성되거나 업데이트 될 때 검색 방법을 통해 대부분의 항목이 어플리케이션에 공통적으로 적용된다.
+- Tracking Model을 사용하여, 장고 모델의 객체가 생성되거나 업데이트 될 때 검색 방법을 통해 대부분의 항목이 어플리케이션에 공통적으로 적용된다.
 
-- 장고는 생성된 각 모델에서 생성된 것과 같은 필드를 제공하지 않으므로 우리는 모델 헬퍼를 생성하여, 모델을 생성할 때 세부정보를 한 번에 빠르게 추가할 수 있는 helper를 생성한다
+- 장고는 생성된 각 모델에서 생성된 것과 같은 필드를 제공하지 않으므로 우리는 모델 helper를생성하여, 모델을 생성할 때 세부정보를 한 번에 빠르게 추가할 수 있는 helper를 생성한다.
 
 #### 생성방법
 
@@ -512,7 +512,19 @@ class JWTAuthentications(BaseAuthentication) :
         return super().authenticate(request)
 ```
 
+### settings.py
 
+```python
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'authentication.jwt.JWTAuthentications',
+    ]
+}
+```
+
+#### API 요청 결과
+
+![getuser 요청 결과](README.assets/getuser 요청 결과.GIF)
 
 ## List/Create API View
 
@@ -659,3 +671,68 @@ https://stackoverflow.com/questions/19707237/use-get-queryset-method-or-set-quer
             # don't do this!
             queryset = Poll.active.filter(pub_date=date.today())
         ```
+
+### ListCreateAPIView
+
+- List와 Create 기능을 한 번에 이용할 수 있는 API View이다.
+
+```python
+class TodosAPIView(ListCreateAPIView) :
+    serializer_class =TodoSerializer
+    permission_classes=(IsAuthenticated,)
+    def perform_create(self, serializer):
+        return serializer.save(owner=self.request.user)
+    # queryset=Todo.objects.all()
+    def get_queryset(self):
+        return Todo.objects.filter(owner=self.request.user)
+```
+
+### RetrieveUpdateDestroyAPIView
+
+- get,put,delete,patch를 이용할 수 있다.
+- lookup_field를 이용해 객체를 찾을 변수를 설정하고 url에서 요청받아, detail을 조회할 수 있다.
+
+```python
+class TodoDetailAPIView(RetrieveUpdateDestroyAPIView) :
+    serializer_class =TodoSerializer
+    permission_classes=(IsAuthenticated,)
+    
+    lookup_field="id"
+    
+    def get_queryset(self):
+        return Todo.objects.filter(owner=self.request.user)
+```
+
+#### RetrieveUpdateDestroyAPIView
+
+```python
+class RetrieveUpdateDestroyAPIView(mixins.RetrieveModelMixin,
+                                   mixins.UpdateModelMixin,
+                                   mixins.DestroyModelMixin,
+                                   GenericAPIView):
+    """
+    Concrete view for retrieving, updating or deleting a model instance.
+    """
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+```
+
+
+
+
+
+## Filtering, Searching, and Ordering. 
+
+#### Django filter 설치
+
+- 백엔드를 통해 데이터를 필터링 할 수 있는 다양한 방법을 제공하는 유연한 라이브러리
+    - 정규식, 일치 정보, 텍스트 등 
