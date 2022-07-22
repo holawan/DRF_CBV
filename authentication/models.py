@@ -1,4 +1,4 @@
-from datetime import timezone
+from datetime import timedelta, timezone
 from django.db import models
 
 from helpers.models import TrackingModel
@@ -6,6 +6,9 @@ from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.contrib.auth.models import PermissionsMixin,AbstractBaseUser,UserManager
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+import jwt 
+from datetime import datetime
+from django.conf import settings
 # Create your models here.
 
 
@@ -105,5 +108,8 @@ class User(AbstractBaseUser, PermissionsMixin,TrackingModel) :
     
     @property
     def token(self) :
-        return ''
+        token=jwt.encode({'username':self.username,'email':self.email,
+                          'exp' : datetime.utcnow() + timedelta(hours=24)},
+                         settings.SECRET_KEY,algorithm='HS256')
         
+        return token

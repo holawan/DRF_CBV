@@ -210,6 +210,7 @@ class User(AbstractBaseUser, PermissionsMixin,TrackingModel) :
     objects = MyUserManager()
 
     EMAIL_FIELD = 'email'
+    #username 필드를 email로 선언하면 email을 기본 로그인 수단으로 이용할 수 있다.!! 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     
@@ -347,3 +348,83 @@ todos\apps.py                  3      3     0%
 todos\models.py                1      0   100%
 todos\tests.py                 1      0   100%
 todos\views.py                 1      1     0%
+
+
+
+## User Registration (Email/Password)
+
+### Class Based View
+
+- 클래스 기반으로 View 함수를 작성하는 것
+
+#### 왜 CBV를 사용하는가?
+
+- Django의 많은 기능을 상속할 수 있기 때문
+
+```python
+class RegisterAPIView(GenericAPIView) :
+    
+    
+    serializer_class=RegisterSerializer 
+    
+    
+    def post(self,request) :
+        serializers = self.serializer_class(data=request.data)  
+        
+        if serializers.is_valid() :
+            serializers.save()
+            return response.Response(serializers.data,status=status.HTTP_201_CREATED)
+        return response.Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
+```
+
+
+
+### Serializer
+
+- 사용자가 우리 프로그램에  json 데이터를 보낼 때 이를 파이썬 네이티브 객체로 바꾸는 역할을 한다.
+
+- 왜냐하면 사용자가 JSON 데이터를 보낼 때 모델 객체처럼 매핑을 해야하기 때문 
+
+- 이것을 연결하는데 도움을 주는 것이 serializer이다. 
+
+- 또한 이를 python 객체를 json으로 변환하여 유저에게 제공한다.  
+
+```python
+class RegisterSerializer(serializers.ModelSerializer) :
+    
+    password = serializers.CharField(max_length=128,min_length=6,write_only=True)
+	#password를 write_only로 설정하여, API 결과로는 보이지 않게 할 수 있다 .    
+    class Meta() :
+        model=User
+        fields = ('username','email','password',)
+        
+    
+    def create(create,validated_data) :
+        
+        return User.objects.create_user(**validated_data)
+```
+
+## Authenticate a user. Get JWT Access Token. 
+
+#### Views.py
+
+```python
+class LoginAPIView(GenericAPIView) :
+    
+    serializer_class = LoginSerializer
+    def post(self,request) :
+        email = request.data.get('email',None)
+        password = request.data.get('password',None)
+        
+        user = authenticate(username=email,password=password)
+        
+        if user :
+            
+            serializer =  self.serializer_class(user)
+            
+            return response.Response(serializer.data,status=status.HTTP_200_OK)
+        return response.Response({'message':"Invaild credentials,try again"},status=status.HTTP_401_UNAUTHORIZED)
+        
+        
+```
+

@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from rest_framework.generics import GenericAPIView
 
-from authentication.serializers import RegisterSerializer
+from authentication.serializers import LoginSerializer, RegisterSerializer
 from rest_framework import response,status
+from django.contrib.auth import authenticate
 # Create your views here.
 # Class Based View를 이용하는 이유 : Django의 많은 기능을 상속할 수 있기 때문
 
@@ -24,3 +25,22 @@ class RegisterAPIView(GenericAPIView) :
             serializers.save()
             return response.Response(serializers.data,status=status.HTTP_201_CREATED)
         return response.Response(serializers.errors,status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class LoginAPIView(GenericAPIView) :
+    
+    serializer_class = LoginSerializer
+    def post(self,request) :
+        email = request.data.get('email',None)
+        password = request.data.get('password',None)
+        
+        user = authenticate(username=email,password=password)
+        
+        if user :
+            
+            serializer =  self.serializer_class(user)
+            
+            return response.Response(serializer.data,status=status.HTTP_200_OK)
+        return response.Response({'message':"Invaild credentials,try again"},status=status.HTTP_401_UNAUTHORIZED)
+        
+        
