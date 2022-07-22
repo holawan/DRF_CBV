@@ -8,7 +8,7 @@ from helpers.models import TrackingModel
 
 
 class Todo(TrackingModel) :
-    
+    id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=255)
     desc = models.TextField()
     is_complete = models.BooleanField(default=False)

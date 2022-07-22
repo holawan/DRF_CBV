@@ -66,6 +66,7 @@ class User(AbstractBaseUser, PermissionsMixin,TrackingModel) :
     # username에 대한 유효성 검사 
     username_validator = UnicodeUsernameValidator()
 
+    id = models.BigAutoField(primary_key=True)
     # username은 char field 
     username = models.CharField(
         _('username'),

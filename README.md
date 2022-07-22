@@ -732,7 +732,90 @@ class RetrieveUpdateDestroyAPIView(mixins.RetrieveModelMixin,
 
 ## Filtering, Searching, and Ordering. 
 
-#### Django filter 설치
+### Django filter
 
 - 백엔드를 통해 데이터를 필터링 할 수 있는 다양한 방법을 제공하는 유연한 라이브러리
     - 정규식, 일치 정보, 텍스트 등 
+
+```
+pip install django_filters
+```
+
+#### Settings.py
+
+```python
+INSTALLED_APPS = [
+    ...
+    #3-rd party
+    'django_filters',
+    ...
+]
+```
+
+#### Views.py
+
+```python
+#todos/views.py
+from django_filters.rest_framework import DjangoFilterBackend
+class TodosAPIView(ListCreateAPIView) :
+    serializer_class =TodoSerializer
+    permission_classes=(IsAuthenticated,)
+    filter_backends=[DjangoFilterBackend,filters.SearchFilter,
+                    filters.OrderingFilter]
+    
+    filterset_fields = ['id','title','desc','is_complete']
+    search_fields = ['id','title','desc','is_complete']
+    ordering_fields = ['id','title','desc','is_complete']
+    
+    
+    def perform_create(self, serializer):
+        return serializer.save(owner=self.request.user)
+    # queryset=Todo.objects.all()
+    def get_queryset(self):
+        return Todo.objects.filter(owner=self.request.user)
+```
+
+### filter 이용하기
+
+#### filterset_fields 
+
+- filterset_fields에 정의된 필드들을 쿼리문 형태로 url에 입력하여 정확히 일치하는 값을 찾을 수 있다.
+    - http://127.0.0.1:8000/api/todos?\<fields>=\<answer>
+
+- 제목이 title인 것으로 검색
+    - ![제목이 title인 것으로 검색](README.assets/제목이 title인 것으로 검색.GIF)
+- 제목이 title3인 것으로 검색
+    - ![제목이 title3인 것으로 검색](README.assets/제목이 title3인 것으로 검색.GIF)
+- Id가 1인 것으로 검색
+    - ![Id가 1인 것으로 검색](README.assets/Id가 1인 것으로 검색.GIF)
+- 완료한 항목 검색
+    - ![완료한 항목 검색](README.assets/완료한 항목 검색.GIF)
+
+#### search_fields 
+
+search_fields에 정의된 필드들을 쿼리문 형태로 url에 입력하여 원하는 정보가 포함된 데이터를 얻을 수 있다.
+
+- http://127.0.0.1:8000/api/todos?\<fields>=\<answer>
+
+- title로 검색
+
+    - title이 들어간 모든 객체들이 검색된다. 
+
+    - ![title로 검색](README.assets/title로 검색.GIF)
+
+- 1로 검색
+    - is_complete가 true이면 1로 인식하기 때문에, true인 값과 id가 1인 값이 나온다. 
+    - ![1로검색](README.assets/1로검색.GIF)
+
+- 0으로 검색
+    - is_complete가 false이면 0으로 인식되기 때문에 객체 자체에 0이란 값이 없지만, 해당 객체들이 조회된다. 
+    - ![0으로 검색](README.assets/0으로 검색.GIF)
+
+#### ordering_fields
+
+- ordering_fields에 정의된 필드들을 쿼리문 형태로 url에 입력하여 순차적으로 출력할 수 있다.
+- 제목 순서로 조회
+    - ![제목 순서로 조회](README.assets/제목 순서로 조회.GIF)
+
+- is_complete로 조회
+    - ![is_complete로 조회](README.assets/is_complete로 조회.GIF)

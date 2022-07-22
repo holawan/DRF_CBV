@@ -41,11 +41,12 @@ AUTH_USER_MODEL = 'authentication.User'
 
 INSTALLED_APPS = [
     
-    
+    #app
     'authentication',
     'todos',
     
-    
+    #3-rd party
+    'django_filters',
     'rest_framework',
     
     
