@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from rest_framework.generics import GenericAPIView
+from authentication import serializers
 
 from authentication.serializers import LoginSerializer, RegisterSerializer
-from rest_framework import response,status
+from rest_framework import response,status,permissions
 from django.contrib.auth import authenticate
 # Create your views here.
 # Class Based View를 이용하는 이유 : Django의 많은 기능을 상속할 수 있기 때문
@@ -11,6 +12,19 @@ from django.contrib.auth import authenticate
 # 왜냐하면 사용자가 JSON 데이터를 보낼 때 모댈 겍체처럼 매핑을 해야하기 때문 
 #이것을 연결하는데 도움을 주는 것이 serializer이다. 
 #또한 이를 python 객체를 json으로 변환하여유저에게 제공한다.  
+
+
+class AuthUserAPIView(GenericAPIView) :
+    
+    permission_classes=(permissions.IsAuthenticated,)
+    
+    def get(self,request) :
+        
+        user = request.user
+        serializers=RegisterSerializer(user)
+        
+        return response.Response({'user':serializers.data})
+         
 
 class RegisterAPIView(GenericAPIView) :
     
