@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     #3-rd party
     'django_filters',
     'rest_framework',
+    'drf_yasg',
     
     
     'django.contrib.admin',

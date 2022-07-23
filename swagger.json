@@ -1,0 +1,271 @@
+swagger: '2.0'
+info:
+  title: Todo API
+  description: Test description
+  termsOfService: https://www.google.com/policies/terms/
+  contact:
+    email: contact@snippets.local
+  license:
+    name: BSD License
+  version: v1
+host: 127.0.0.1:8000
+schemes:
+  - http
+basePath: /api
+consumes:
+  - application/json
+produces:
+  - application/json
+securityDefinitions:
+  Basic:
+    type: basic
+security:
+  - Basic: []
+paths:
+  /auth/login:
+    post:
+      operationId: auth_login_create
+      description: ''
+      parameters:
+        - name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Login'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/Login'
+      tags:
+        - auth
+    parameters: []
+  /auth/register:
+    post:
+      operationId: auth_register_create
+      description: ''
+      parameters:
+        - name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Register'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/Register'
+      tags:
+        - auth
+    parameters: []
+  /auth/user:
+    get:
+      operationId: auth_user_list
+      description: ''
+      parameters:
+        - name: page
+          in: query
+          description: A page number within the paginated result set.
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: ''
+      tags:
+        - auth
+    parameters: []
+  /todos/:
+    get:
+      operationId: todos_list
+      description: ''
+      parameters:
+        - name: search
+          in: query
+          description: A search term.
+          required: false
+          type: string
+        - name: ordering
+          in: query
+          description: Which field to use when ordering the results.
+          required: false
+          type: string
+        - name: p
+          in: query
+          description: A page number within the paginated result set.
+          required: false
+          type: integer
+        - name: count
+          in: query
+          description: Number of results to return per page.
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: ''
+          schema:
+            required:
+              - count
+              - results
+            type: object
+            properties:
+              count:
+                type: integer
+              next:
+                type: string
+                format: uri
+                x-nullable: true
+              previous:
+                type: string
+                format: uri
+                x-nullable: true
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/Todo'
+      tags:
+        - todos
+    post:
+      operationId: todos_create
+      description: ''
+      parameters:
+        - name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Todo'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/Todo'
+      tags:
+        - todos
+    parameters: []
+  /todos/{id}:
+    get:
+      operationId: todos_read
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Todo'
+      tags:
+        - todos
+    put:
+      operationId: todos_update
+      description: ''
+      parameters:
+        - name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Todo'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Todo'
+      tags:
+        - todos
+    patch:
+      operationId: todos_partial_update
+      description: ''
+      parameters:
+        - name: data
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Todo'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Todo'
+      tags:
+        - todos
+    delete:
+      operationId: todos_delete
+      description: ''
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+        - todos
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+definitions:
+  Login:
+    required:
+      - email
+      - password
+    type: object
+    properties:
+      email:
+        title: Email address
+        type: string
+        format: email
+        maxLength: 254
+        minLength: 1
+      password:
+        title: Password
+        type: string
+        maxLength: 128
+        minLength: 6
+      token:
+        title: Token
+        type: string
+        readOnly: true
+  Register:
+    required:
+      - username
+      - email
+      - password
+    type: object
+    properties:
+      username:
+        title: Username
+        description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+          only.
+        type: string
+        pattern: ^[\w.@+-]+$
+        maxLength: 150
+        minLength: 1
+      email:
+        title: Email address
+        type: string
+        format: email
+        maxLength: 254
+        minLength: 1
+      password:
+        title: Password
+        type: string
+        maxLength: 128
+        minLength: 6
+  Todo:
+    required:
+      - title
+      - desc
+    type: object
+    properties:
+      id:
+        title: Id
+        type: integer
+        readOnly: true
+      title:
+        title: Title
+        type: string
+        maxLength: 255
+        minLength: 1
+      desc:
+        title: Desc
+        type: string
+        minLength: 1
+      is_complete:
+        title: Is complete
+        type: boolean

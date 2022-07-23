@@ -1084,3 +1084,82 @@ class TestTodoDetailAPIView(TodosAPITestCase) :
         self.assertEqual(Todo.objects.all().count(),0)
 ```
 
+## API Documentation
+
+- 우리는 백엔드 구축을 마치면, 사람들과 상호작용하기 위해 API문서를 작성한다.
+- 해당 API로 다른 개발자와 상호작요하기 때문에 알기 쉽게 API 사용법을 제공할 필요가 있다. 
+
+- 스웨거(swagger)를 사용하면 응용프로그램이 어떻게 구성되어 있는지 설명한 문서를 자동으로 생성할 수 있다.
+
+### drf-yasg 
+
+- https://drf-yasg.readthedocs.io/en/stable/readme.html
+
+#### 사용법 
+
+1. ``````
+    pip install -U drf-yasg
+    ``````
+
+2. ```python
+    #settings.py
+    #INSTALLED_APPS에 추가 
+    #django.contrib.staticfiles가 있는지 확인하고 없으면 넣어줌 
+    #html과 css를 사용하는 앱이기 때문이다.
+    INSTALLED_APPS = [
+    	...
+        'drf_yasg',
+        'django.contrib.staticfiles',
+        ...
+    ]
+    ```
+
+3. ```python
+    #urls.py
+    from django.contrib import admin
+    from django.urls import path,include
+    
+    from rest_framework import permissions
+    from drf_yasg.views import get_schema_view
+    from drf_yasg import openapi
+    
+    schema_view = get_schema_view(
+       openapi.Info(
+          title="Todo API",
+          default_version='v1',
+          description="Test description",
+          terms_of_service="https://www.google.com/policies/terms/",
+          contact=openapi.Contact(email="contact@snippets.local"),
+          license=openapi.License(name="BSD License"),
+       ),
+       public=True,
+       permission_classes=[permissions.AllowAny],
+    )
+    urlpatterns = [
+        
+        path('swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+        path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+        path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    ]
+    
+    ```
+
+4. CSRF 인증을 하기 위해 authentication_classes를 설정한다.
+
+    ```python
+    schema_view = get_schema_view(
+       openapi.Info(
+        title="Todo API",
+        default_version='v1',
+        description="Test description",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="contact@snippets.local"),
+        license=openapi.License(name="BSD License"),
+       ),
+        public=True,
+        permission_classes=[permissions.AllowAny],
+        authentication_classes=[],
+    )
+    ```
+
+    
