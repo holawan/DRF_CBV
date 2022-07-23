@@ -819,3 +819,105 @@ search_fields에 정의된 필드들을 쿼리문 형태로 url에 입력하여 
 
 - is_complete로 조회
     - ![is_complete로 조회](README.assets/is_complete로 조회.GIF)
+
+## Pagination
+
+- 한정된 네트워크 자원을 효율적으로 활용하기 위해 쿼리의 결과값으로 리턴된 리소스를 분할하여 전달 하는 것을 의미한다.
+- 콘텐츠를 여러 페이지로 나누고, 이전 혹은 다음 페이지로 넘어가거나 특정 페이지로 넘어갈 수 있게한다.
+
+### LimitOffsetPagination
+
+- Limit과 Offset을 이용해서, pagination을 진행하는 방식으로 **limit**은 한 페이지에 보여줄 객체의 수를 의미하고, **offset**은 몇 번 인덱스의 레코드를 보여줄 것인지 결정하는 파라미터이다. 
+- offset 번째 레코드부터 
+
+#### Default setting
+
+```python
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'authentication.jwt.JWTAuthentications',
+    ],
+    'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.LimitOffsetPagination',
+
+}
+```
+
+- settings.py에서 해당 코드를 추가하면 간단히 Limit-Offset Pagination을 구현할 수 잇다.
+
+- LImit=2,offset=1 일 경우 2번째 인덱스부터 2개씩 보여준다.
+    - ![limit=2,offset=1](README.assets/limit=2,offset=1.GIF)
+
+- limit=2,offset=2일 경우 3번째 인덱스부터 2개씩 보여준다.
+
+![limit=2&offset=2](README.assets/limit=2&offset=2.GIF)
+
+#### PageNumberPagination
+
+- page : 몇 번째 페이지인지 표시해줍니다. 페이지는 1부터 시작한다.
+- page_size : 한 페이지에 몇 개의 레코드를 보여줄지 표시한다.
+- count  : 몇개의 레코드를 보여줄 것인지 count 파라미터로 설정할 수 있다.
+
+#### Default settings
+
+- settings.py에서 기본 Pagination option을 지정할 수 있으며, 글로벌하게 적용된다. 
+
+```python
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'authentication.jwt.JWTAuthentications',
+    ],
+    #PageNumberPagination
+    'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
+    #한 페이지에 보여줄 레코드의 수 
+    'PAGE_SIZE':6
+}
+```
+
+- 1페이지 검색
+    - ![pagenumber](README.assets/pagenumber.GIF)
+- 2페이지 검색
+    - ![2page](README.assets/2page.GIF)
+
+#### CustomPagination
+
+- 페이지네이션을 할 때, 글로벌 옵션을 사용하지 않고, 각 View에 따라, 다른 옵션을 설정하고 싶다면 커스터마이징을 할 수 있다.
+
+```python
+#pagination.py
+from rest_framework import pagination
+
+class CustomPageNumberPagination(pagination.PageNumberPagination) :
+    
+    page_size=3
+    page_size_query_param='count'
+    max_page_size=5
+    page_query_param='p'
+    
+    
+#views.py
+
+from todos.pagination import CustomPageNumberPagination
+
+class TodosAPIView(ListCreateAPIView) :
+    serializer_class =TodoSerializer
+    pagination_class = CustomPageNumberPagination
+  
+    def get_queryset(self):
+        return Todo.objects.filter(owner=self.request.user)
+```
+
+- page_size: 한 페이지에 보여줄 레코드의 수
+- page_size_query_param : 파라미터에 count 수를 입력하여 몇 개의 레코드를 보여줄것인지 추가로 요청을 하게 도와준다.
+- max_page_size : count로 요청 시 너무 많은 레코드를 요청하지 못하게 제한한다. 
+    - 10개를 요청해도 5개만 준다.
+- page_query_param : 'page' 파라미터로 페이지의 번호를 요청해야하는데, 이를 p로 단축하게 도와준다.
+
+- page_query_param으로 요청하기
+    - 기본 파라키터 'page'가 아닌 p로 요청할 수 있다. 
+    - ![page_query_param으로 요청](README.assets/page_query_param으로 요청.GIF)
+- count를 명시하고 요청하기
+    - 기본 3개가 아닌 원하는 count로 레코드를 요청할 수 있다.
+    - ![count로 요청 범위 조절하기](README.assets/count로 요청 범위 조절하기.GIF)
+- max_page_size 이상으로 요청하기
+    - ![max_page 이상으로 요청하기](README.assets/max_page 이상으로 요청하기.GIF)

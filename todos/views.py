@@ -2,6 +2,7 @@ from django.shortcuts import render
 from rest_framework.generics import CreateAPIView,ListAPIView,ListCreateAPIView,RetrieveUpdateDestroyAPIView
 from todos.models import Todo
 from rest_framework import filters
+from todos.pagination import CustomPageNumberPagination
 from todos.serializers import TodoSerializer
 # Create your views here.
 from rest_framework.permissions import IsAuthenticated
@@ -9,6 +10,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 class TodosAPIView(ListCreateAPIView) :
     serializer_class =TodoSerializer
+    pagination_class = CustomPageNumberPagination
     permission_classes=(IsAuthenticated,)
     filter_backends=[DjangoFilterBackend,filters.SearchFilter,
                     filters.OrderingFilter]
